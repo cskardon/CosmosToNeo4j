@@ -1,0 +1,14 @@
+{
+  "Nodes": [
+    {
+      "Cosmos": "Person",
+      "Neo4j": "Person"
+    }
+  ],
+  "Relationships": [
+    {
+      "Cosmos": "ACTED_IN",
+      "Neo4j": "ACTED_IN"
+    }
+  ]
+}

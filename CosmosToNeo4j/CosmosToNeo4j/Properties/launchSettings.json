@@ -1,0 +1,16 @@
+{
+  "profiles": {
+    "CosmosToNeo4j": {
+      "commandName": "Project",
+      "commandLineArgs": "-mapping Mapping.json"
+    },
+    "Missing Mapping": {
+      "commandName": "Project",
+      "commandLineArgs": "-mapping Mapping.Missing.json"
+    },
+    "Empty Mapping": {
+      "commandName": "Project",
+      "commandLineArgs": "-mapping Mapping.Empty.json"
+    }
+  }
+}

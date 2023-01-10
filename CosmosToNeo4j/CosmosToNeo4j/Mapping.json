@@ -1,0 +1,38 @@
+{
+  "Nodes": [
+    {
+      "Cosmos": "Person",
+      "Neo4j": "Person"
+    },
+    {
+      "Cosmos": "Movie",
+      "Neo4j": "Movie"
+    }
+  ],
+  "Relationships": [
+    {
+      "Cosmos": "ACTED_IN",
+      "Neo4j": "ACTED_IN"
+    },
+    {
+      "Cosmos": "DIRECTED",
+      "Neo4j": "DIRECTED"
+    },
+    {
+      "Cosmos": "PRODUCED",
+      "Neo4j": "PRODUCED"
+    },
+    {
+      "Cosmos": "WROTE",
+      "Neo4j": "WROTE"
+    },
+    {
+      "Cosmos": "FOLLOWS",
+      "Neo4j": "FOLLOWS"
+    },
+    {
+      "Cosmos": "REVIEWED",
+      "Neo4j": "REVIEWED"
+    }
+  ]
+}
