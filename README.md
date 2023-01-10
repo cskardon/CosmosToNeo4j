@@ -1,51 +1,62 @@
-# CosmosToNeo4j
+# Cosmos To Neo4j
 
 Taking CosmosDB and migrating to Neo4j
 
 ---
 
-### To use with Gremlin Console
+Do you have data in CosmosDB? But you want to see that data in Neo4j?
+Maybe just to test, to compare etc, but the **effort** oh so much effort, if only there was some way to just get it all and push it in...
 
+Well...
 
-The `cosmos-emulator.yaml` file is in the folder with this. You will want to 
+Good news!! This project exists to allow you to connect to a CosmosDB instance, and read the Vertices and Edges and translate them into Nodes and Relationships 
+and put them into a Neo4j database.
 
-```
-:remote connect tinkerpop.server conf/cosmos-emulator.yaml
-:remote console
-```
+## Some guidance
 
-Does this work on Cosmos proper? Doesn't seem to on the Emulator
+There is 1 thing you have to do:
 
-```
-gremlin> t = g.V().hasLabel('person');[]
-gremlin> t.next(2)
-==>v[1]
-==>v[2]
-gremlin> t.next(2)
-==>v[4]
-==>v[6]
-```
+* Update the `appsettings.json` to have the correct config for your Cosmos and Neo4j instances
 
-Get a specific node by Neo4j Id.
+You can also (optionally) provide a `Mappings` file.
+
+## Mappings
+
+The mappings file is a JSON document that tells the app what to map each Label to from Cosmos to Neo4j
+
+The structure is in the format of an Array of Node mappings, and an Array of Relationship mappings (see the example below)
 
 ```
-g.V().hasLabel("Person").has("Identifier", eq("1"))
-
+{
+  "Nodes": [
+    {
+      "Cosmos": "Actor",
+      "Neo4j": "Person"
+    }
+  ],
+  "Relationships": [
+    {
+      "Cosmos": "Acted",
+      "Neo4j": "ACTED_IN"
+    },
+    {
+      "Cosmos": "Watched",
+      "Neo4j": "REVIEWED"
+    }
+  ]
+}
 ```
 
-Mapping file idea?
+File name doesn't matter - only the content. You pass it in using the `-m` argument to the app:
 
-`Type::Cosmos::Neo4j`
-```
-Node::"Person"::"Person"
-Node::"Movie"::"Movie"
-Rel::"ACTED_IN"::"ACTED_IN"
-```
+`.\CosmosToNeo4j.exe -m .\Mapping.json`
 
-PartitionKey = /PartitionKey
+_If_ you don't supply it - you will be asked if you just want to map the labels / types in a 1-to-1 fashion
 
-Get labels?
+## Probable issues
 
-```
-g.V().groupCount().by(label).unfold().project('Entity Type','Count').by(keys).by(values)
-```
+* Performance
+* Data type support
+* Random bugs due to lack of testing
+
+Please try and let me know - raise issues - if at all possible with ways to replicate the data in Cosmos (in the emulator if possible) - so I can test properly.
