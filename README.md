@@ -20,6 +20,21 @@ There is 1 thing you have to do:
 
 You can also (optionally) provide a `Mappings` file.
 
+## Parameters
+
+There are some parameters you can use to configure the running of the app.
+
+### Mappings (optional)
+
+`-mapping <FILENAME>` - allows you to specify a Mappings file to map Cosmos Labels to Neo4j Labels.
+
+### BatchSize (optional)
+
+`-batchsize <INT>` - allows you to define the size of the batch that will be ingested into your Neo4j database. You might need to set this to a 
+low number for environments with lower memory. The default size is `4000`.
+
+NB This will batch _per label_ or _type_ - so you might have less than 4000 nodes, but see 5 batches, because you have 5 different Labels on your nodes.
+
 ## Mappings
 
 The mappings file is a JSON document that tells the app what to map each Label to from Cosmos to Neo4j
