@@ -120,10 +120,10 @@ public class Neo4j
 
                 var query = StartQuery.Write
                     .Unwind(toInsert, "rel")
-                    .Match($"(inN {{CosmosId: rel.{nameof(CosmosRelationship.InVertexId)} }})")
-                    .Match($"(outN {{CosmosId: rel.{nameof(CosmosRelationship.OutVertexId)} }})")
+                    .Match("(inN {CosmosId: rel.inV })")
+                    .Match("(outN {CosmosId: rel.outV })")
                     .Merge($"(inN)-[r:`{typeAndRelationships.Key}`]->(outN)")
-                    .Set($"r = rel.{nameof(CosmosRelationship.Properties)}");
+                    .Set($"r += rel.properties");
 
                 output.Add(query);
 
@@ -150,7 +150,7 @@ public class Neo4j
                 var query = StartQuery.Write
                     .Unwind(toInsert, "node")
                     .Merge($"(n:`{labelAndNodes.Key}` {{CosmosId:node.id}})")
-                    .Set($"n = node.{nameof(CosmosNode.PropertiesAsDictionary)}");
+                    .Set($"n += node.{nameof(CosmosNode.PropertiesAsDictionary)}");
 
                 output.Add(query);
 

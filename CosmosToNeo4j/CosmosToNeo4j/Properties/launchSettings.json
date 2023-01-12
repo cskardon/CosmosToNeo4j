@@ -2,7 +2,7 @@
   "profiles": {
     "CosmosToNeo4j": {
       "commandName": "Project",
-      "commandLineArgs": "-mapping Mapping.json -batchsize 50"
+      "commandLineArgs": "-mapping Mapping.json -batchsize 100"
     },
     "Missing Mapping": {
       "commandName": "Project",
