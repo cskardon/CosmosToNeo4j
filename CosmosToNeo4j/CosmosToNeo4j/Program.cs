@@ -53,7 +53,7 @@ var enableSsl =config.GetValue<bool>("CosmosDB:EnableSsl");
 var containerLink = $"/dbs/{database}/colls/{container}";
 var cosmos = new CosmosDb(host, port, containerLink, accountKey, enableSsl);
 var neo4j = new CosmosToNeo4j.Neo4j(
-    $"neo4j://{config.GetValue<string>(Neo4jSettings.Host)}:{config.GetValue<int>(Neo4jSettings.Port)}",
+    $"{config.GetValue<string>(Neo4jSettings.Host)}:{config.GetValue<int>(Neo4jSettings.Port)}",
     config.GetValue<string>(Neo4jSettings.Username)!,
     config.GetValue<string>(Neo4jSettings.Password)!, 
     config.GetValue<string>(Neo4jSettings.Database)!
