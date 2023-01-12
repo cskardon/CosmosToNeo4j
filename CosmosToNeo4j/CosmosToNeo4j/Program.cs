@@ -13,6 +13,7 @@ var config = new ConfigurationBuilder()
     .Build();
 
 string? mappingFile = null;
+int batchSize = 2000;
 
 ParseArgs(args);
 
@@ -25,8 +26,11 @@ void ParseArgs(string[] args)
             case "-m":
             case "-map":
             case "-mapping":
-                i++;
-                mappingFile = args[i];
+                mappingFile = args[++i];
+                break;
+            case "-batchsize":
+                batchSize = int.Parse(args[++i]);
+                Console.WriteLine($"Batch Size set to: {batchSize}");
                 break;
             default:
                 throw new ArgumentOutOfRangeException("args", args[i], $"Unknown parameter '{args[i]}'.");
@@ -123,7 +127,7 @@ var cosmosData = await cosmos.Read<CosmosNode, CosmosRelationship>(mappings, cos
 Console.WriteLine("Inserting into Neo4j");
 await neo4j.InsertIndexes(mappings);
 Console.WriteLine("Indexes done...");
-await neo4j.Insert(cosmosData);
+await neo4j.Insert(cosmosData, batchSize);
 Console.WriteLine("Data in!");
 
 Console.WriteLine("press enter to exit");
