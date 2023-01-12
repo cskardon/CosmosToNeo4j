@@ -13,12 +13,12 @@ public class CosmosReadOutput<TNode, TRelationship>
     /// <summary>
     /// A dictionary of the nodes by *Neo4j* label.
     /// </summary>
-    public IDictionary<string, List<TNode>> Nodes { get; set; }
+    public IDictionary<string, List<TNode>>? Nodes { get; set; }
 
     /// <summary>
     /// A dictionary of the relationships by *Neo4j* type.
     /// </summary>
-    public IDictionary<string, List<TRelationship>> Relationships { get; set; }
+    public IDictionary<string, List<TRelationship>>? Relationships { get; set; }
 }
 
 public class CosmosDb
@@ -198,7 +198,7 @@ public class CosmosDb
                 var cypher = new StringBuilder($"MERGE (n{startNode})-[r{relationshipCounter}:`{mapping.Neo4j}`]->(n{endNode})");
                 if (obj.Properties.Any())
                     cypher.Append(" SET");
-                var properties = obj.Properties.Select(property => $" r{relationshipCounter}.{property.Key} = {GetValue(property.Value)}").ToList();
+                var properties = obj.Properties.Select(property => $" r{relationshipCounter}.{property.Key} = {property.Value.GetValue()}").ToList();
                 cypher.Append(string.Join(",", properties));
 
                 output.AppendLine(cypher.ToString());
@@ -243,7 +243,7 @@ public class CosmosDb
                     if (obj.Properties.Any())
                         cypher.Append(" SET");
 
-                    var properties = obj.Properties.Select(property => $" n{nodeCounter}.{property.Key} = {GetValue(property.Value[0].Value)}").ToList();
+                    var properties = obj.Properties.Select(property => $" n{nodeCounter}.{property.Key} = {property.Value[0].Value.GetValue()}").ToList();
 
                     cypher.Append(string.Join(",", properties));
                     cosmosIdToCypherImportId.Add(obj.Id, nodeCounter);
@@ -257,18 +257,7 @@ public class CosmosDb
         return output.ToString();
     }
 
-    private static string? GetValue(object value)
-    {
-        if (value == null)
-            throw new ArgumentNullException(nameof(value));
 
-        return value switch
-        {
-            int => value.ToString(),
-            double => value.ToString(),
-            _ => $"\"{value.ToString()?.Replace("\"", "\\\"")}\""
-        };
-    }
 
     #region Cosmos Response Model Classes
     public class CosmosEdgeResponse : CosmosRelationship

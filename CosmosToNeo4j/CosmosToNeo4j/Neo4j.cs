@@ -135,7 +135,7 @@ public class Neo4j
                 if (cosmosRelationship.Properties.Any())
                     cypher.Append(" SET");
 
-                var properties = cosmosRelationship.Properties.Select(property => $" r{relationshipCounter}.{property.Key} = {GetValue(property.Value)}").ToList();
+                var properties = cosmosRelationship.Properties.Select(property => $" r{relationshipCounter}.{property.Key} = {property.Value.GetValue()}").ToList();
                 cypher.Append(string.Join(",", properties));
 
 
@@ -171,7 +171,7 @@ public class Neo4j
                 if (cosmosNode.Properties.Any())
                     cypher.Append(" SET");
 
-                var properties = cosmosNode.Properties.Select(property => $" n{nodeCounter}.{property.Key} = {GetValue(property.Value[0].Value)}").ToList();
+                var properties = cosmosNode.Properties.Select(property => $" n{nodeCounter}.{property.Key} = {property.Value[0].Value.GetValue()}").ToList();
                 cypher.Append(string.Join(",", properties));
                 batchCypher.AppendLine(cypher.ToString());
                 nodeCounter++;
@@ -181,20 +181,6 @@ public class Neo4j
 
         return output;
     }
-
-    private static string? GetValue(object value)
-    {
-        if (value == null)
-            throw new ArgumentNullException(nameof(value));
-
-        return value switch
-        {
-            int => value.ToString(),
-            double => value.ToString(),
-            _ => $"\"{value.ToString()?.Replace("\"", "\\\"")}\""
-        };
-    }
-
 
     public async Task Insert(string cypher)
     {
