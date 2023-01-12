@@ -1,8 +1,5 @@
 ﻿namespace CosmosToNeo4j;
 
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Xml.Linq;
 using global::Neo4j.Driver;
 using Neo4jClient;
 using Neo4jClient.ApiModels.Cypher;
@@ -11,9 +8,7 @@ using Neo4jClient.Cypher;
 public class Neo4j
 {
     private readonly IGraphClient _client;
-    internal string Database { get; }
-    internal string Uri { get; }
-    
+
     public Neo4j(string uri, string username, string password, string database)
     {
         _client = new BoltGraphClient(uri, username, password);
@@ -23,6 +18,9 @@ public class Neo4j
         var connectTask = _client.ConnectAsync();
         connectTask.Wait();
     }
+
+    internal string Database { get; }
+    internal string Uri { get; }
 
     private IDriver Driver => ((BoltGraphClient)_client).Driver;
 
@@ -90,102 +88,87 @@ public class Neo4j
         paths = pathsTask.Result.ToList();
     }
 
-
     public async Task Insert<TNode, TRelationship>(CosmosReadOutput<TNode, TRelationship> cosmosData, int batchSize = 4000)
         where TNode : CosmosNode
         where TRelationship : CosmosRelationship
     {
-        var nodeCypher = NodeCypher(cosmosData.Nodes, batchSize);
+        Console.Write("\tNodes...");
+        var nodeCypher = NodeQueries(cosmosData.Nodes, batchSize).ToList();
         foreach (var cypher in nodeCypher)
-            await Insert(cypher);
+            await cypher.ExecuteWithoutResultsAsync();
+        Console.WriteLine($"...Done ({nodeCypher.Count} batches)");
 
-        var relationshipCypher = RelationshipCypher(cosmosData.Relationships, batchSize);
+        Console.Write("\tRelationships...");
+        var relationshipCypher = RelationshipQueries(cosmosData.Relationships, batchSize).ToList();
         foreach (var cypher in relationshipCypher)
-            await Insert(cypher);
+            await cypher.ExecuteWithoutResultsAsync();
+        Console.WriteLine($"...Done ({relationshipCypher.Count} batches)");
     }
 
-    private static IEnumerable<string> RelationshipCypher<TRelationship>(IDictionary<string, List<TRelationship>> relationships, int batchSize)
+    private IEnumerable<ICypherFluentQuery> RelationshipQueries<TRelationship>(IDictionary<string, List<TRelationship>> relationships, int batchSize)
         where TRelationship : CosmosRelationship
     {
-        var output = new List<string>();
+        var output = new List<ICypherFluentQuery>();
 
-        int relationshipCounter = 0;
-        int nodeCounter = 0;
-
-        var batchCypher = new StringBuilder();
         foreach (var typeAndRelationships in relationships)
         {
-            foreach (var cosmosRelationship in typeAndRelationships.Value)
+            var completed = 0;
+            var batchNumber = 1;
+            while (completed < typeAndRelationships.Value.Count)
             {
-                if (relationshipCounter >= batchSize)
-                {
-                    output.Add(batchCypher.ToString());
-                    batchCypher = new StringBuilder();
-                }
+                var toInsert = typeAndRelationships.Value.Skip((batchNumber - 1) * batchSize).Take(batchSize).ToList();
 
-                var startNode = nodeCounter++;
-                var endNode = nodeCounter++;
+                var query = StartQuery.Write
+                    .Unwind(toInsert, "rel")
+                    .Match("(inN {CosmosId: rel.inV })")
+                    .Match("(outN {CosmosId: rel.outV })")
+                    .Merge($"(inN)-[r:`{typeAndRelationships.Key}`]->(outN)")
+                    .Set($"r += rel.properties");
 
-                var cypher = new StringBuilder()
-                    .Append($"{(batchCypher.Length > 0 ? "WITH 0 AS _ " : string.Empty)}")
-                    .Append($"MATCH (n{startNode} {{CosmosId:\"{cosmosRelationship.InVertexId}\"}}) ")
-                    .Append($"MATCH (n{endNode} {{CosmosId:\"{cosmosRelationship.OutVertexId}\"}}) ")
-                    .Append($"MERGE (n{startNode})-[r{relationshipCounter}:`{typeAndRelationships.Key}` {{CosmosId:\"{cosmosRelationship.Id}\"}}]->(n{endNode})");
-                
-                if (cosmosRelationship.Properties.Any())
-                    cypher.Append(" SET");
+                output.Add(query);
 
-                var properties = cosmosRelationship.Properties.Select(property => $" r{relationshipCounter}.{property.Key} = {property.Value.GetValue()}").ToList();
-                cypher.Append(string.Join(",", properties));
-
-
-
-                batchCypher.AppendLine(cypher.ToString());
-                relationshipCounter++;
+                batchNumber++;
+                completed += toInsert.Count;
             }
         }
-        output.Add(batchCypher.ToString());
-
-        return output;    
-    }
-
-    private static IEnumerable<string> NodeCypher<TNode>(IDictionary<string, List<TNode>> nodes, int batchSize)
-        where TNode : CosmosNode
-    {
-        var output = new List<string>();
-
-        int nodeCounter = 0;
-
-        var batchCypher = new StringBuilder();
-        foreach (var labelAndNodes in nodes)
-        {
-            foreach (var cosmosNode in labelAndNodes.Value)
-            {
-                if (nodeCounter >= batchSize)
-                {
-                    output.Add(batchCypher.ToString());
-                    batchCypher = new StringBuilder();
-                }
-
-                var cypher = new StringBuilder($"MERGE (n{nodeCounter}:`{labelAndNodes.Key}` {{CosmosId:\"{cosmosNode.Id}\"}})");
-                if (cosmosNode.Properties.Any())
-                    cypher.Append(" SET");
-
-                var properties = cosmosNode.Properties.Select(property => $" n{nodeCounter}.{property.Key} = {property.Value[0].Value.GetValue()}").ToList();
-                cypher.Append(string.Join(",", properties));
-                batchCypher.AppendLine(cypher.ToString());
-                nodeCounter++;
-            }
-        }
-        output.Add(batchCypher.ToString());
 
         return output;
     }
 
-    public async Task Insert(string cypher)
+    private IEnumerable<ICypherFluentQuery> NodeQueries<TNode>(IDictionary<string, List<TNode>> nodes, int batchSize)
+        where TNode : CosmosNode
+    {
+        var output = new List<ICypherFluentQuery>();
+
+        foreach (var labelAndNodes in nodes)
+        {
+            var completed = 0;
+            var batchNumber = 1;
+            while (completed < labelAndNodes.Value.Count)
+            {
+                var toInsert = labelAndNodes.Value.Skip((batchNumber - 1) * batchSize).Take(batchSize).ToList();
+                var query = StartQuery.Write
+                    .Unwind(toInsert, "node")
+                    .Merge($"(n:`{labelAndNodes.Key}` {{CosmosId:node.id}})")
+                    .Set($"n += node.{nameof(CosmosNode.PropertiesAsDictionary)}");
+
+                output.Add(query);
+
+                batchNumber++;
+                completed += toInsert.Count;
+            }
+        }
+
+        return output;
+    }
+
+    public async Task InsertIndexes(Mappings mappings)
     {
         var session = Driver.AsyncSession(config => config.WithDatabase(Database));
-        await session.ExecuteWriteAsync(x => x.RunAsync(cypher));
+        foreach (var node in mappings.Nodes)
+            await session.ExecuteWriteAsync(x => x.RunAsync($"CREATE INDEX {node.Neo4j}_node_cosmos IF NOT EXISTS FOR (n:{node.Neo4j}) ON n.CosmosId"));
+        foreach (var rel in mappings.Relationships)
+            await session.ExecuteWriteAsync(x => x.RunAsync($"CREATE INDEX {rel.Neo4j}_rel_cosmos IF NOT EXISTS FOR ()-[r:{rel.Neo4j}]-() ON r.CosmosId"));
     }
 
     public abstract class ThingFromNeo
@@ -205,14 +188,5 @@ public class Neo4j
     {
         public string? Labels { get; set; }
         public NodeAll? Node { get; set; }
-    }
-
-    public async Task InsertIndexes(Mappings mappings)
-    {
-        var session = Driver.AsyncSession(config => config.WithDatabase(Database));
-        foreach (var node in mappings.Nodes)
-            await session.ExecuteWriteAsync(x => x.RunAsync($"CREATE INDEX {node.Neo4j}_node_cosmos IF NOT EXISTS FOR (n:{node.Neo4j}) ON n.CosmosId"));
-        foreach (var rel in mappings.Relationships)
-            await session.ExecuteWriteAsync(x => x.RunAsync($"CREATE INDEX {rel.Neo4j}_rel_cosmos IF NOT EXISTS FOR ()-[r:{rel.Neo4j}]-() ON r.CosmosId"));
     }
 }
