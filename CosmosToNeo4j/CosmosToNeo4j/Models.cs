@@ -52,7 +52,7 @@ public class CosmosResponse : CosmosNode
 
 public abstract class CosmosEntity
 {
-    [JsonProperty("id")] public Guid Id { get; set; }
+    [JsonProperty("id")] public string Id { get; set; }
     [JsonProperty("label")] public string Label { get; set; }
     [JsonProperty("type")] public string Type { get; set; }
 }
@@ -63,9 +63,9 @@ public class CosmosRelationship : CosmosEntity
 
     [JsonProperty("outVLabel")] public string OutVertexLabel { get; set; }
 
-    [JsonProperty("inV")] public Guid InVertexId { get; set; }
+    [JsonProperty("inV")] public string InVertexId { get; set; }
 
-    [JsonProperty("outV")] public Guid OutVertexId { get; set; }
+    [JsonProperty("outV")] public string OutVertexId { get; set; }
 
     [JsonProperty("properties")] public IDictionary<string, object> Properties { get; set; }
 }

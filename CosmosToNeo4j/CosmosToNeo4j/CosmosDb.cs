@@ -180,7 +180,7 @@ public class CosmosDb
 
 
 
-    private async Task<string> ReadEdges(Mappings mappings, IDictionary<Guid, int> cosmosIdToCypherImportId)
+    private async Task<string> ReadEdges(Mappings mappings, IDictionary<string, int> cosmosIdToCypherImportId)
     {
         var output = new StringBuilder();
 
@@ -217,13 +217,13 @@ public class CosmosDb
     /// <param name="pageSize">This is going to be used as a rough guide - we can't actually page, so we're using this to work out the 'number' of pages.</param>
     /// <param name="cosmosStats"></param>
     /// <returns>A cypher statement</returns>
-    private string ReadNodes(Mappings mappings, out IDictionary<Guid, int> cosmosIdToCypherImportId, int pageSize, Stats cosmosStats )
+    private string ReadNodes(Mappings mappings, out IDictionary<string, int> cosmosIdToCypherImportId, int pageSize, Stats cosmosStats )
     {
         //I would rather this returned something I can parse properly into statements.
         //IDictionary<string, List<dynamic>> (string = label name)
 
         var output = new StringBuilder();
-        cosmosIdToCypherImportId = new Dictionary<Guid, int>();
+        cosmosIdToCypherImportId = new Dictionary<string, int>();
         var nodeCounter = 0;
         foreach (var mapping in mappings.Nodes)
         {
