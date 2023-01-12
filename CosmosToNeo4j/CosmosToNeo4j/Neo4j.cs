@@ -191,7 +191,7 @@ public class Neo4j
         {
             int => value.ToString(),
             double => value.ToString(),
-            _ => $"\"{value}\""
+            _ => $"\"{value.ToString()?.Replace("\"", "\\\"")}\""
         };
     }
 

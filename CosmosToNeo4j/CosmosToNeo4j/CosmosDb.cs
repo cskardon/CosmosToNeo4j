@@ -266,7 +266,7 @@ public class CosmosDb
         {
             int => value.ToString(),
             double => value.ToString(),
-            _ => $"\"{value}\""
+            _ => $"\"{value.ToString()?.Replace("\"", "\\\"")}\""
         };
     }
 
