@@ -23,7 +23,7 @@ public class CosmosDb
     private readonly IGremlinClient _client;
     private readonly IPaginator _paginator;
 
-    public CosmosDb(IConfiguration config, IPaginator paginator = null)
+    public CosmosDb(IConfiguration config, IPaginator? paginator = null)
     {
         var accountKey = config.GetValue<string>(CosmosSettings.AccessKey);
         var database = config.GetValue<string>(CosmosSettings.Database);
