@@ -13,13 +13,13 @@ var config = new ConfigurationBuilder()
     .Build();
 
 string? mappingFile = null;
-int batchSize = 2000;
+var batchSize = 2000;
 
 ParseArgs(args);
 
 void ParseArgs(string[] args)
 {
-    for (int i = 0; i < args.Length; i++)
+    for (var i = 0; i < args.Length; i++)
     {
         switch (args[i].ToLowerInvariant())
         {
@@ -47,24 +47,8 @@ if (mappingFile != null)
 
 mappings ??= new Mappings();
 
-var accountKey = config.GetValue<string>("CosmosDB:AccessKey");
-var database = config.GetValue<string>("CosmosDB:Database");
-var container = config.GetValue<string>("CosmosDB:Container");
-var host = config.GetValue<string>("CosmosDB:Host");
-var port = config.GetValue<int>("CosmosDB:Port");
-var enableSsl =config.GetValue<bool>("CosmosDB:EnableSsl");
-
-var containerLink = $"/dbs/{database}/colls/{container}";
-var cosmos = new CosmosDb(host, port, containerLink, accountKey, enableSsl);
-var neo4j = new CosmosToNeo4j.Neo4j(
-    $"{config.GetValue<string>(Neo4jSettings.Host)}:{config.GetValue<int>(Neo4jSettings.Port)}",
-    config.GetValue<string>(Neo4jSettings.Username)!,
-    config.GetValue<string>(Neo4jSettings.Password)!, 
-    config.GetValue<string>(Neo4jSettings.Database)!
-    );
-
-// Console.WriteLine("Reading from Neo4j");
-// neo4j.Read(out var relationships, out var nodes, out var paths);
+var cosmos = new CosmosDb(config);
+var neo4j = new CosmosToNeo4j.Neo4j(config);
 
 var cosmosStats = await cosmos.GetStats();
 if (!Transferer.AreCosmosMappingsOk(mappings, cosmosStats, out var missingNodeLabels, out var missingRelationshipTypes))
@@ -104,9 +88,7 @@ if (!Transferer.AreCosmosMappingsOk(mappings, cosmosStats, out var missingNodeLa
     }
 }
 
-
 var neo4jStats = await neo4j.GetStats();
-
 if (neo4jStats.ContainsData())
 {
     Console.WriteLine($"Your Neo4j Database ({neo4j.Database} on {neo4j.Uri}) is not empty, if you want to continue, please type 'YES' and press ENTER");
@@ -115,44 +97,38 @@ if (neo4jStats.ContainsData())
         return;
 }
 
-// Console.WriteLine("Inserting into CosmosDB");
-// await cosmos.Insert(paths, nodes, relationships);
-
-// Console.WriteLine("PAUSE!!!!");
-// Console.ReadLine();
-
-Console.WriteLine("Reading from CosmosDB");
+Console.Write("Reading from CosmosDB...");
+var now = DateTime.Now;
 var cosmosData = await cosmos.Read<CosmosNode, CosmosRelationship>(mappings, cosmosStats);
+Console.WriteLine($" done ({(DateTime.Now - now).TotalMilliseconds} ms)");
 
 Console.WriteLine("Inserting into Neo4j");
+Console.Write("Adding indexes...");
+now = DateTime.Now;
 await neo4j.InsertIndexes(mappings);
-Console.WriteLine("Indexes done...");
-await neo4j.Insert(cosmosData, batchSize);
-Console.WriteLine("Data in!");
+Console.WriteLine($" done ({(DateTime.Now - now).TotalMilliseconds} ms)");
 
-Console.WriteLine("press enter to exit");
+Console.Write("Adding nodes and relationships...");
+now = DateTime.Now;
+var tab = await neo4j.Insert(cosmosData, batchSize);
+Console.WriteLine($" done ({(DateTime.Now - now).TotalMilliseconds}ms)");
+Console.WriteLine($"\t* Nodes         - {tab.Nodes?.NumberOfBatches} batches ({tab.Nodes?.TimeTaken.TotalMilliseconds} ms)");
+Console.WriteLine($"\t* Relationships - {tab.Relationships?.NumberOfBatches} batches ({tab.Relationships?.TimeTaken.TotalMilliseconds} ms)");
+
+
+var countStats = Transferer.CompareCounts(cosmosStats, await neo4j.GetStats());
+if (countStats.ContainsData())
+{
+    Console.WriteLine("There is a difference between the counts in Cosmos vs Neo4j:");
+    Console.WriteLine("\t Nodes");
+    Console.WriteLine($"\t\tCosmos: {cosmosStats.TotalNodes}{Environment.NewLine}\t\tNeo4j: {cosmosStats.TotalNodes - countStats.TotalNodes}");
+    Console.WriteLine("\t Relationships");
+    Console.WriteLine($"\t\tCosmos: {cosmosStats.TotalRelationships}{Environment.NewLine}\t\tNeo4j: {cosmosStats.TotalRelationships - countStats.TotalRelationships}");
+}
+else
+{
+    Console.WriteLine($"Imported {cosmosStats.TotalNodes} nodes and {cosmosStats.TotalRelationships} relationships to Neo4j.");
+}
+
+Console.WriteLine("Press ENTER to exit");
 Console.ReadLine();
-
-
-public class Mappings
-{
-    public List<Map> Nodes { get; set; }
-    public List<Map> Relationships { get; set; }
-}
-
-public class Map
-{
-    public string Cosmos { get; set; }
-    public string Neo4j { get; set; }
-}
-
-public static class Neo4jSettings
-{
-    private const string Base = "Neo4j:";
-
-    public const string Host = $"{Base}Host";
-    public const string Port = $"{Base}Port";
-    public const string Database = $"{Base}Database";
-    public const string Username = $"{Base}Username";
-    public const string Password = $"{Base}Password";
-}

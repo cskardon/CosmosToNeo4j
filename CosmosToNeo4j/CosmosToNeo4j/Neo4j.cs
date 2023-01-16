@@ -1,24 +1,52 @@
 ﻿namespace CosmosToNeo4j;
 
 using global::Neo4j.Driver;
+using Microsoft.Extensions.Configuration;
 using Neo4jClient;
-using Neo4jClient.ApiModels.Cypher;
 using Neo4jClient.Cypher;
 
 public class Neo4j
 {
+    public class TimingsAndBatches
+    {
+        public TimingAndBatchCount? Nodes { get; set; }
+        public TimingAndBatchCount? Relationships { get; set; }
+    }
+
+    public class TimingAndBatchCount
+    {
+        public TimeSpan TimeTaken { get; set; }
+        public int? NumberOfBatches { get; set; }
+    }
+
+    private static class Neo4jSettings
+    {
+        private const string Base = "Neo4j:";
+
+        public const string Host = $"{Base}Host";
+        public const string Port = $"{Base}Port";
+        public const string Database = $"{Base}Database";
+        public const string Username = $"{Base}Username";
+        public const string Password = $"{Base}Password";
+    }
+
     private readonly IGraphClient _client;
 
-    public Neo4j(string uri, string username, string password, string database)
+    public Neo4j(IConfiguration config)
     {
-        _client = new BoltGraphClient(uri, username, password);
+        var uri = $"{config.GetValue<string>(Neo4jSettings.Host)}:{config.GetValue<int>(Neo4jSettings.Port)}";
+        var user = config.GetValue<string>(Neo4jSettings.Username)!;
+        var pass = config.GetValue<string>(Neo4jSettings.Password)!;
+        var database = config.GetValue<string>(Neo4jSettings.Database)!;
+
+        _client = new BoltGraphClient(uri, user, pass);
         Database = string.IsNullOrWhiteSpace(database) ? "neo4j" : database;
 
         Uri = uri;
         var connectTask = _client.ConnectAsync();
         connectTask.Wait();
     }
-
+    
     internal string Database { get; }
     internal string Uri { get; }
 
@@ -52,63 +80,33 @@ public class Neo4j
         return stats;
     }
 
-    public void Read(out List<RelationshipWithId> relationships, out List<NodeWithId> nodes, out List<PathsResultBolt> paths)
-    {
-        var relationshipsQuery = StartQuery
-            .Match("()-[r]->()")
-            .Return(r => new RelationshipWithId
-            {
-                Identifier = Return.As<int>("id(r)"),
-                Type = Return.As<string>("type(r)"),
-                Rel = r.As<RelationshipAll>()
-            });
-
-        var nodesQuery = StartQuery
-            .Match("(n)")
-            .Return(n => new NodeWithId
-                {
-                    Identifier = Return.As<int>("id(n)"),
-                    Labels = Return.As<string>("labels(n)"),
-                    Node = n.As<NodeAll>()
-                }
-            );
-
-        var pathsQuery = StartQuery
-            .Match("p = ( (n)-[r]->() )")
-            .Return(p => p.As<PathsResultBolt>());
-
-        var relsTask = relationshipsQuery.ResultsAsync;
-        var nodesTask = nodesQuery.ResultsAsync;
-        var pathsTask = pathsQuery.ResultsAsync;
-
-        Task.WaitAll(relsTask, nodesTask, pathsTask);
-
-        relationships = relsTask.Result.ToList();
-        nodes = nodesTask.Result.ToList();
-        paths = pathsTask.Result.ToList();
-    }
-
-    public async Task Insert<TNode, TRelationship>(CosmosReadOutput<TNode, TRelationship> cosmosData, int batchSize = 4000)
+    public async Task<TimingsAndBatches> Insert<TNode, TRelationship>(CosmosReadOutput<TNode, TRelationship> cosmosData, int batchSize = 4000)
         where TNode : CosmosNode
         where TRelationship : CosmosRelationship
     {
-        Console.Write("\tNodes...");
-        var nodeCypher = NodeQueries(cosmosData.Nodes, batchSize).ToList();
+        var output = new TimingsAndBatches();
+
+        var now = DateTime.Now;
+        var nodeCypher = GenerateNodeQueries(cosmosData.Nodes, batchSize).ToList();
         foreach (var cypher in nodeCypher)
             await cypher.ExecuteWithoutResultsAsync();
-        Console.WriteLine($"...Done ({nodeCypher.Count} batches)");
+        output.Nodes = new TimingAndBatchCount { NumberOfBatches = nodeCypher.Count, TimeTaken = DateTime.Now - now };
 
-        Console.Write("\tRelationships...");
-        var relationshipCypher = RelationshipQueries(cosmosData.Relationships, batchSize).ToList();
+        now = DateTime.Now;
+        var relationshipCypher = GenerateRelationshipQueries(cosmosData.Relationships, batchSize).ToList();
         foreach (var cypher in relationshipCypher)
             await cypher.ExecuteWithoutResultsAsync();
-        Console.WriteLine($"...Done ({relationshipCypher.Count} batches)");
+        output.Relationships = new TimingAndBatchCount { NumberOfBatches = relationshipCypher.Count, TimeTaken = DateTime.Now - now };
+
+        return output;
     }
 
-    private IEnumerable<ICypherFluentQuery> RelationshipQueries<TRelationship>(IDictionary<string, List<TRelationship>> relationships, int batchSize)
+    private IEnumerable<ICypherFluentQuery> GenerateRelationshipQueries<TRelationship>(IDictionary<string, List<TRelationship>>? relationships, int batchSize)
         where TRelationship : CosmosRelationship
     {
         var output = new List<ICypherFluentQuery>();
+        if (relationships == null)
+            return output;
 
         foreach (var typeAndRelationships in relationships)
         {
@@ -135,10 +133,12 @@ public class Neo4j
         return output;
     }
 
-    private IEnumerable<ICypherFluentQuery> NodeQueries<TNode>(IDictionary<string, List<TNode>> nodes, int batchSize)
+    private IEnumerable<ICypherFluentQuery> GenerateNodeQueries<TNode>(IDictionary<string, List<TNode>>? nodes, int batchSize)
         where TNode : CosmosNode
     {
         var output = new List<ICypherFluentQuery>();
+        if(nodes == null) 
+            return output;
 
         foreach (var labelAndNodes in nodes)
         {
@@ -169,24 +169,5 @@ public class Neo4j
             await session.ExecuteWriteAsync(x => x.RunAsync($"CREATE INDEX {node.Neo4j}_node_cosmos IF NOT EXISTS FOR (n:{node.Neo4j}) ON n.CosmosId"));
         foreach (var rel in mappings.Relationships)
             await session.ExecuteWriteAsync(x => x.RunAsync($"CREATE INDEX {rel.Neo4j}_rel_cosmos IF NOT EXISTS FOR ()-[r:{rel.Neo4j}]-() ON r.CosmosId"));
-    }
-
-    public abstract class ThingFromNeo
-    {
-        public string? CosmosId { get; set; }
-        public int Identifier { get; set; }
-        public bool HasBeenAdded { get; set; }
-    }
-
-    public class RelationshipWithId : ThingFromNeo
-    {
-        public string? Type { get; set; }
-        public RelationshipAll? Rel { get; set; }
-    }
-
-    public class NodeWithId : ThingFromNeo
-    {
-        public string? Labels { get; set; }
-        public NodeAll? Node { get; set; }
     }
 }

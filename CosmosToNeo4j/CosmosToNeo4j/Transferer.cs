@@ -13,4 +13,15 @@ public static class Transferer
     {
         return toCheck.Where(value => actual.All(x => x != value)).ToList();
     }
+
+    public static Stats CompareCounts(Stats cosmos, Stats neo4j)
+    {
+        var output = new Stats
+        {
+            TotalNodes = cosmos.TotalNodes - neo4j.TotalNodes,
+            TotalRelationships = cosmos.TotalRelationships - neo4j.TotalRelationships
+        };
+
+        return output;
+    }
 }
