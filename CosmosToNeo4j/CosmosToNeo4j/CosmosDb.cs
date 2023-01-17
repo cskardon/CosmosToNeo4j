@@ -39,19 +39,17 @@ public class CosmosDb
     }
     
 
-    public async Task<CosmosReadOutput<TNode, TRelationship>> Read<TNode, TRelationship>(Mappings mappings, Stats cosmosStats)
+    public async Task<CosmosReadOutput<TNode, TRelationship>> Read<TNode, TRelationship>(Mappings mappings, Stats cosmosStats, int pages)
         where TNode : CosmosNode
         where TRelationship : CosmosRelationship
     {
         var output = new CosmosReadOutput<TNode, TRelationship>();
-
-        //TODO Hard coded page size - auto generation of count / 36?
-        var nodePageSize = (int)cosmosStats.TotalNodes / 36;
+        var nodePageSize = (int)cosmosStats.TotalNodes / pages;
 
         var nodes = await ReadNodes<TNode>(mappings, nodePageSize, cosmosStats);
         output.Nodes = nodes;
 
-        var relationships = await ReadEdges<TRelationship>(mappings, cosmosStats, (int)cosmosStats.TotalRelationships / 36);
+        var relationships = await ReadEdges<TRelationship>(mappings, cosmosStats, (int)cosmosStats.TotalRelationships / pages);
         output.Relationships = relationships;
 
         return output;

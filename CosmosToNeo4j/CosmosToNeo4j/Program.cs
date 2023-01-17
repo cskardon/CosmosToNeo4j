@@ -1,5 +1,6 @@
 ﻿#define Emulator
 // #define Azure
+
 using CosmosToNeo4j;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
@@ -12,8 +13,11 @@ var config = new ConfigurationBuilder()
 #endif
     .Build();
 
+const int maxNumberOfPages = 36;
+
 string? mappingFile = null;
 var batchSize = 2000;
+var pages = maxNumberOfPages;
 
 ParseArgs(args);
 
@@ -28,9 +32,20 @@ void ParseArgs(string[] args)
             case "-mapping":
                 mappingFile = args[++i];
                 break;
+            case "-bs":
             case "-batchsize":
                 batchSize = int.Parse(args[++i]);
                 Console.WriteLine($"Batch Size set to: {batchSize}");
+                break;
+            case "-p":
+            case "-pages":
+                pages = int.Parse(args[++i]);
+                if (pages > maxNumberOfPages)
+                {
+                    Console.WriteLine($"** Pages supplied '{pages}' is greater than the maximum allowed at present ({maxNumberOfPages}), so it has been reset **");
+                    pages = maxNumberOfPages;
+                }
+                Console.WriteLine($"Pages set to {pages}");
                 break;
             default:
                 throw new ArgumentOutOfRangeException("args", args[i], $"Unknown parameter '{args[i]}'.");
@@ -99,7 +114,7 @@ if (neo4jStats.ContainsData())
 
 Console.Write("Reading from CosmosDB...");
 var now = DateTime.Now;
-var cosmosData = await cosmos.Read<CosmosNode, CosmosRelationship>(mappings, cosmosStats);
+var cosmosData = await cosmos.Read<CosmosNode, CosmosRelationship>(mappings, cosmosStats, pages);
 Console.WriteLine($" done ({(DateTime.Now - now).TotalMilliseconds} ms)");
 
 Console.WriteLine("Inserting into Neo4j");

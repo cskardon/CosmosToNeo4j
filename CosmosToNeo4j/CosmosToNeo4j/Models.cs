@@ -3,49 +3,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-public class Vertex
-{
-    [JsonIgnore] public object? Id { get; set; } = Guid.NewGuid().ToString();
-
-    [JsonIgnore] public string? Label { get; set; }
-
-    [JsonIgnore] public string PartitionKey { get; set; } = "PartitionKey";
-}
-
-public class Edge
-{
-    [JsonIgnore] public object? Id { get; set; } = Guid.NewGuid().ToString();
-
-    [JsonIgnore] public string? Label { get; set; }
-}
-
-public class RelationshipAll : Edge
-{
-    // [JsonProperty("roles")] public string[]? Roles { get; set; }
-
-    // [JsonProperty("summary")] public string? Summary { get; set; }
-    //
-    // [JsonProperty("rating")] public int? Rating { get; set; }
-}
-
-public class NodeAll : Vertex
-{
-    [JsonProperty("title")] public string? Title { get; set; }
-
-    [JsonProperty("tagline")] public string? TagLine { get; set; }
-
-    [JsonProperty("released")] public int? Released { get; set; }
-
-    [JsonProperty("born")] public int? Born { get; set; }
-
-    [JsonProperty("name")] public string? Name { get; set; }
-}
-
-#region For Cosmos
-
-public class CosmosResponse : CosmosNode
-{
-}
 
 public abstract class CosmosEntity
 {
@@ -90,8 +47,9 @@ public class CosmosNode : CosmosEntity
         var output = new Dictionary<string, object>();
         foreach (var element in Properties)
         {
-            var prop = element.Value?.ToObject<List<CosmosProperty>>().First();
-            output.Add(element.Key, prop.Value);
+            var prop = (element.Value?.ToObject<List<CosmosProperty>>() ?? new List<CosmosProperty>()).FirstOrDefault();
+            if(prop != null && prop.Value != null) 
+                output.Add(element.Key, prop.Value);
         }
 
         return output;
@@ -104,5 +62,3 @@ public class CosmosNode : CosmosEntity
         [JsonProperty("value")] public object? Value { get; set; }
     }
 }
-
-#endregion For Cosmos
