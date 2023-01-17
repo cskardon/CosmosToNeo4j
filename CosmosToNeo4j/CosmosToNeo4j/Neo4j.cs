@@ -121,8 +121,8 @@ public class Neo4j
                     .Unwind(toInsert, "rel")
                     .Match("(inN {CosmosId: rel.inV })")
                     .Match("(outN {CosmosId: rel.outV })")
-                    .Merge($"(inN)-[r:`{typeAndRelationships.Key}`]->(outN)")
-                    .Set($"r += rel.properties");
+                    .Merge($"(inN)-[r:`{typeAndRelationships.Key}` {{CosmosId:rel.id}}]->(outN)")
+                    .Set("r += rel.properties");
 
                 output.Add(query);
 
