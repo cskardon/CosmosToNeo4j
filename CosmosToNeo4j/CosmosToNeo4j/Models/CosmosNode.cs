@@ -1,28 +1,7 @@
-﻿namespace CosmosToNeo4j;
+﻿namespace CosmosToNeo4j.Models;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-
-
-public abstract class CosmosEntity
-{
-    [JsonProperty("id")] public string? Id { get; set; }
-    [JsonProperty("label")] public string? Label { get; set; }
-    [JsonProperty("type")] public string? Type { get; set; }
-}
-
-public class CosmosRelationship : CosmosEntity
-{
-    [JsonProperty("inVLabel")] public string? InVertexLabel { get; set; }
-
-    [JsonProperty("outVLabel")] public string? OutVertexLabel { get; set; }
-
-    [JsonProperty("inV")] public string? InVertexId { get; set; }
-
-    [JsonProperty("outV")] public string? OutVertexId { get; set; }
-
-    [JsonProperty("properties")] public IDictionary<string, object>? Properties { get; set; }
-}
 
 public class CosmosNode : CosmosEntity
 {
@@ -48,7 +27,7 @@ public class CosmosNode : CosmosEntity
         foreach (var element in Properties)
         {
             var prop = (element.Value?.ToObject<List<CosmosProperty>>() ?? new List<CosmosProperty>()).FirstOrDefault();
-            if(prop != null && prop.Value != null) 
+            if (prop != null && prop.Value != null)
                 output.Add(element.Key, prop.Value);
         }
 

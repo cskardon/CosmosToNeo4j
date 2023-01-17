@@ -1,5 +1,6 @@
 ﻿namespace CosmosToNeo4j;
 
+using CosmosToNeo4j.Models;
 using global::Neo4j.Driver;
 using Microsoft.Extensions.Configuration;
 using Neo4jClient;

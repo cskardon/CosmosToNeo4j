@@ -1,5 +1,6 @@
 ﻿namespace CosmosToNeo4j;
 
+using CosmosToNeo4j.Models;
 using Gremlin.Net.Driver;
 using Gremlin.Net.Structure.IO.GraphSON;
 using JetBrains.Annotations;

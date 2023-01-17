@@ -2,6 +2,7 @@
 // #define Azure
 
 using CosmosToNeo4j;
+using CosmosToNeo4j.Models;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 
