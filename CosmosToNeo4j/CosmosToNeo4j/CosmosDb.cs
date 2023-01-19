@@ -94,7 +94,8 @@ public class CosmosDb
 
         foreach (var mapping in mappings)
         {
-            output.Add(mapping.Neo4j, new List<T>());
+            if(!output.ContainsKey(mapping.Neo4j))
+                output.Add(mapping.Neo4j, new List<T>());
 
             var numPages = GetNumberOfPages(stats, mapping.Cosmos, pageSize, isNode);
             var gremlinQueries = _paginator.GeneratePagingPairs(numPages)
@@ -113,6 +114,9 @@ public class CosmosDb
 
     private static int GetNumberOfPages(Stats stats, string label, int pageSize, bool isNode)
     {
+        if (!stats.NodeLabelCounts.ContainsKey(label) && !stats.RelationshipLabelCounts.ContainsKey(label))
+            return 0;
+        
         var count = isNode ? stats.NodeLabelCounts[label] : stats.RelationshipLabelCounts[label];
         return (int)Math.Min(count / pageSize, 36);
     }
