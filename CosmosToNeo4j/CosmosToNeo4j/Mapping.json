@@ -6,8 +6,15 @@
     },
     {
       "Cosmos": "Movie",
-      "Neo4j": "Movie"
-    }
+      "Neo4j": "Movie",
+      "Properties": [
+        {
+          "Cosmos": "title",
+          "Ignored": false,
+          "Indexed": true
+        }
+      ]
+                      }
   ],
   "Relationships": [
     {
