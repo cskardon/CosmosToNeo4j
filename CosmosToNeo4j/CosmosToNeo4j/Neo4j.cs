@@ -111,23 +111,29 @@ public class Neo4j
 
         foreach (var typeAndRelationships in relationships)
         {
-            var completed = 0;
-            var batchNumber = 1;
-            while (completed < typeAndRelationships.Value.Count)
+            var typeRelationshipsGroupedByInOutLabels = typeAndRelationships.Value.GroupBy(x => new { x.InVertexLabel, x.OutVertexLabel });
+            foreach (var grp in typeRelationshipsGroupedByInOutLabels)
             {
-                var toInsert = typeAndRelationships.Value.Skip((batchNumber - 1) * batchSize).Take(batchSize).ToList();
+                var all = grp.ToList();
 
-                var query = StartQuery.Write
-                    .Unwind(toInsert, "rel")
-                    .Match("(inN {CosmosId: rel.inV })")
-                    .Match("(outN {CosmosId: rel.outV })")
-                    .Merge($"(inN)-[r:`{typeAndRelationships.Key}` {{CosmosId:rel.id}}]->(outN)")
-                    .Set("r += rel.properties");
+                var completed = 0;
+                var batchNumber = 1;
+                while (completed < all.Count)
+                {
+                    var toInsert = all.Skip((batchNumber - 1) * batchSize).Take(batchSize).ToList();
 
-                output.Add(query);
+                    var query = StartQuery.Write
+                        .Unwind(toInsert, "rel")
+                        .Match($"(inN:{grp.Key.InVertexLabel} {{CosmosId: rel.inV}})")
+                        .Match($"(outN:{grp.Key.OutVertexLabel} {{CosmosId: rel.outV}})")
+                        .Merge($"(inN)-[r:`{typeAndRelationships.Key}` {{CosmosId:rel.id}}]->(outN)")
+                        .Set("r += rel.properties");
 
-                batchNumber++;
-                completed += toInsert.Count;
+                    output.Add(query);
+
+                    batchNumber++;
+                    completed += toInsert.Count;
+                }
             }
         }
 
