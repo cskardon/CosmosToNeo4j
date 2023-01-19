@@ -11,6 +11,10 @@
     "Empty Mapping": {
       "commandName": "Project",
       "commandLineArgs": "-mapping Mapping.Empty.json"
+    },
+    "Invalid Mapping": {
+      "commandName": "Project",
+      "commandLineArgs": "-mapping Mapping.LabelsNotThere.json -batchsize 100"
     }
   }
 }

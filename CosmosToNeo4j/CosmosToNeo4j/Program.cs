@@ -57,8 +57,10 @@ void ParseArgs(string[] args)
 Mappings? mappings = null;
 if (mappingFile != null)
 {
+    Console.Write($"Loading mappings from: {mappingFile}...");
     var content = File.ReadAllText(mappingFile);
     mappings = JsonConvert.DeserializeObject<Mappings>(content);
+    Console.WriteLine(" done.");
 }
 
 mappings ??= new Mappings();
