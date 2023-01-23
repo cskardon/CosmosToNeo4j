@@ -16,6 +16,7 @@ var config = new ConfigurationBuilder()
 
 const int maxNumberOfPages = 36;
 
+bool generateMappings = false;
 string? mappingFile = null;
 var batchSize = 2000;
 var pages = maxNumberOfPages;
@@ -28,6 +29,11 @@ void ParseArgs(string[] args)
     {
         switch (args[i].ToLowerInvariant())
         {
+            case "-gm":
+            case "-generatemappings":
+                mappingFile = args[++i];
+                generateMappings = true;
+                break;
             case "-m":
             case "-map":
             case "-mapping":
@@ -54,6 +60,25 @@ void ParseArgs(string[] args)
     }
 }
 
+
+
+var cosmos = new CosmosDb(config);
+var cosmosStats = await cosmos.GetStats();
+
+if (generateMappings)
+{
+    if (string.IsNullOrWhiteSpace(mappingFile))
+    {
+        Console.WriteLine("You need to supply a filename to write to.");
+        return;
+    }
+
+    var mappingsContents = FileHandler.GenerateMappings(cosmosStats);
+    await FileHandler.WriteMappingsFile(mappingFile, mappingsContents);
+    Console.WriteLine($"Mappings file written to {mappingFile}");
+    return;
+}
+
 Mappings? mappings = null;
 if (mappingFile != null)
 {
@@ -65,10 +90,10 @@ if (mappingFile != null)
 
 mappings ??= new Mappings();
 
-var cosmos = new CosmosDb(config);
+
 var neo4j = new CosmosToNeo4j.Neo4j(config);
 
-var cosmosStats = await cosmos.GetStats();
+
 if (!Transferer.AreCosmosMappingsOk(mappings, cosmosStats, out var missingNodeLabels, out var missingRelationshipTypes))
 {
     if (missingNodeLabels.Any())
