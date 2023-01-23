@@ -9,13 +9,13 @@
       "Neo4j": "Movie",
       "Properties": [
         {
-          "Cosmos": "title",
+          "Cosmos": "Title",
           "Ignored": false,
           "Indexed": true
         },
         {
-          "Cosmos": "released",
-          "Ignored": false,
+          "Cosmos": "Released",
+          "Ignored": true,
           "Indexed": false
         }
       ]

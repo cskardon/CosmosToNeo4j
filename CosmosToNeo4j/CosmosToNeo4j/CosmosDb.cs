@@ -1,5 +1,6 @@
 ﻿namespace CosmosToNeo4j;
 
+using System.IO.MemoryMappedFiles;
 using CosmosToNeo4j.Models;
 using Gremlin.Net.Driver;
 using Gremlin.Net.Structure.IO.GraphSON;
@@ -139,7 +140,17 @@ public class CosmosDb
     private async Task<IDictionary<string, List<TNode>>> ReadNodes<TNode>(Mappings mappings, int pageSize, Stats cosmosStats)
         where TNode : CosmosNode
     {
-        return await Read<TNode>(true, mappings.Nodes, cosmosStats, pageSize);
+        var nodes = await Read<TNode>(true, mappings.Nodes, cosmosStats, pageSize);
+        foreach (var node in nodes)
+        { 
+            var mapping = mappings.Nodes.SingleOrDefault(n => n.Neo4j == node.Key);
+            if (mapping == null || mapping.Properties == null || !mapping.Properties.Any()) 
+                continue;
+            
+            foreach (var cosmosNode in node.Value)
+                cosmosNode.RemoveIgnored(mapping.Properties);
+        }
+        return nodes;
     }
 
 
