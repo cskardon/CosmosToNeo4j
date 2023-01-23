@@ -8,29 +8,6 @@ using Neo4jClient.Cypher;
 
 public class Neo4j
 {
-    public class TimingsAndBatches
-    {
-        public TimingAndBatchCount? Nodes { get; set; }
-        public TimingAndBatchCount? Relationships { get; set; }
-    }
-
-    public class TimingAndBatchCount
-    {
-        public TimeSpan TimeTaken { get; set; }
-        public int? NumberOfBatches { get; set; }
-    }
-
-    private static class Neo4jSettings
-    {
-        private const string Base = "Neo4j:";
-
-        public const string Host = $"{Base}Host";
-        public const string Port = $"{Base}Port";
-        public const string Database = $"{Base}Database";
-        public const string Username = $"{Base}Username";
-        public const string Password = $"{Base}Password";
-    }
-
     private readonly IGraphClient _client;
 
     public Neo4j(IConfiguration config)
@@ -47,7 +24,7 @@ public class Neo4j
         var connectTask = _client.ConnectAsync();
         connectTask.Wait();
     }
-    
+
     internal string Database { get; }
     internal string Uri { get; }
 
@@ -144,7 +121,7 @@ public class Neo4j
         where TNode : CosmosNode
     {
         var output = new List<ICypherFluentQuery>();
-        if(nodes == null) 
+        if (nodes == null)
             return output;
 
         foreach (var labelAndNodes in nodes)
@@ -172,9 +149,51 @@ public class Neo4j
     public async Task InsertIndexes(Mappings mappings)
     {
         var session = Driver.AsyncSession(config => config.WithDatabase(Database));
-        foreach (var node in mappings.Nodes)
-            await session.ExecuteWriteAsync(x => x.RunAsync($"CREATE INDEX {node.Neo4j}_node_cosmos IF NOT EXISTS FOR (n:{node.Neo4j}) ON n.CosmosId"));
-        foreach (var rel in mappings.Relationships)
-            await session.ExecuteWriteAsync(x => x.RunAsync($"CREATE INDEX {rel.Neo4j}_rel_cosmos IF NOT EXISTS FOR ()-[r:{rel.Neo4j}]-() ON r.CosmosId"));
+        if (mappings.Nodes != null)
+            foreach (var node in mappings.Nodes)
+            {
+                var nodeTl = node.Neo4j.ToLowerInvariant().Replace(" ", "");
+                await session.ExecuteWriteAsync(x => x.RunAsync($"CREATE INDEX {nodeTl}_node_cosmos IF NOT EXISTS FOR (n:`{node.Neo4j}`) ON n.CosmosId"));
+                if (node.Properties == null || !node.Properties.Any())
+                    continue;
+
+                foreach (var index in node.Properties.Where(p => p.Indexed).Select(property => $"CREATE INDEX {nodeTl}_node_{property.Neo4j?.ToLowerInvariant().Replace(" ", "")} IF NOT EXISTS FOR (n:`{node.Neo4j}`) ON n.{property.Neo4j}"))
+                    await session.ExecuteWriteAsync(x => x.RunAsync(index));
+            }
+
+        if (mappings.Relationships != null)
+            foreach (var rel in mappings.Relationships)
+            {
+                var relTl = rel.Neo4j.ToLowerInvariant().Replace(" ", "");
+                await session.ExecuteWriteAsync(x => x.RunAsync($"CREATE INDEX {relTl}_rel_cosmos IF NOT EXISTS FOR ()-[r:`{rel.Neo4j}`]-() ON r.CosmosId"));
+                if (rel.Properties == null || !rel.Properties.Any())
+                    continue;
+
+                foreach (var index in rel.Properties.Where(p => p.Indexed).Select(property => $"CREATE INDEX {relTl}_rel_{property.Neo4j?.ToLowerInvariant().Replace(" ", "")} IF NOT EXISTS FOR ()-[r:`{relTl}`]-() ON r.{property.Neo4j}"))
+                    await session.ExecuteWriteAsync(x => x.RunAsync(index));
+            }
+    }
+
+    public class TimingsAndBatches
+    {
+        public TimingAndBatchCount? Nodes { get; set; }
+        public TimingAndBatchCount? Relationships { get; set; }
+    }
+
+    public class TimingAndBatchCount
+    {
+        public TimeSpan TimeTaken { get; set; }
+        public int? NumberOfBatches { get; set; }
+    }
+
+    private static class Neo4jSettings
+    {
+        private const string Base = "Neo4j:";
+
+        public const string Host = $"{Base}Host";
+        public const string Port = $"{Base}Port";
+        public const string Database = $"{Base}Database";
+        public const string Username = $"{Base}Username";
+        public const string Password = $"{Base}Password";
     }
 }

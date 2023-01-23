@@ -2,7 +2,18 @@
 
 public class PropertyMap
 {
-    public string? Cosmos { get; set; }
+    private string? _cosmos;
+
+    public string? Cosmos
+    {
+        get => _cosmos;
+        set
+        {
+            _cosmos = value;
+            Neo4j = value;
+        }
+    }
+
     public string? Neo4j { get; set; }
     public bool Indexed { get; set; }
     public bool Ignored { get; set; }

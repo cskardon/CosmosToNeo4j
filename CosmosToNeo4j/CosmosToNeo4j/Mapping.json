@@ -12,6 +12,11 @@
           "Cosmos": "title",
           "Ignored": false,
           "Indexed": true
+        },
+        {
+          "Cosmos": "released",
+          "Ignored": false,
+          "Indexed": false
         }
       ]
                       }
