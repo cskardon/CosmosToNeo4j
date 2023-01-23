@@ -1,4 +1,6 @@
-﻿namespace CosmosToNeo4j;
+﻿using CosmosToNeo4j.Models;
+
+namespace CosmosToNeo4j;
 
 public static class Transferer
 {

@@ -18,6 +18,16 @@ public class CosmosNode : CosmosEntity
 
     public IDictionary<string, object>? PropertiesAsDictionary { get; private set; }
 
+    public void RemoveIgnored(IList<PropertyMap>? properties)
+    {
+        if (properties == null) 
+            return;
+
+        foreach (var property in properties.Where(p => p.Ignored))
+            if (!string.IsNullOrWhiteSpace(property.Neo4j))
+                PropertiesAsDictionary?.Remove(property.Neo4j);
+    }
+
     private IDictionary<string, object> PropertiesToDictionary()
     {
         if (Properties == null)
