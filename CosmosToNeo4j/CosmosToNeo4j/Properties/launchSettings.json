@@ -15,6 +15,10 @@
     "Invalid Mapping": {
       "commandName": "Project",
       "commandLineArgs": "-mapping Mapping.LabelsNotThere.json -batchsize 100"
+    },
+    "GenerateMappings": {
+      "commandName": "Project",
+      "commandLineArgs": "-gm GeneratedMappings.json"
     }
   }
 }
