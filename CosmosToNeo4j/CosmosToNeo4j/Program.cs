@@ -153,7 +153,7 @@ Console.WriteLine($" done ({(DateTime.Now - now).TotalMilliseconds} ms)");
 
 Console.Write("Adding nodes and relationships...");
 now = DateTime.Now;
-var tab = await neo4j.Insert(cosmosData, batchSize);
+var tab = await neo4j.Insert(cosmosData, mappings, batchSize);
 Console.WriteLine($" done ({(DateTime.Now - now).TotalMilliseconds}ms)");
 Console.WriteLine($"\t* Nodes         - {tab.Nodes?.NumberOfBatches} batches ({tab.Nodes?.TimeTaken.TotalMilliseconds} ms)");
 Console.WriteLine($"\t* Relationships - {tab.Relationships?.NumberOfBatches} batches ({tab.Relationships?.TimeTaken.TotalMilliseconds} ms)");

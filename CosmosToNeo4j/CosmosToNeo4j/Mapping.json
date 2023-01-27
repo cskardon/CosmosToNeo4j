@@ -2,7 +2,7 @@
   "Nodes": [
     {
       "Cosmos": "Person",
-      "Neo4j": "Person"
+      "Neo4j": "Human"
     },
     {
       "Cosmos": "Movie",

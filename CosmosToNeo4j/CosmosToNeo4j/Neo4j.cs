@@ -58,7 +58,7 @@ public class Neo4j
         return stats;
     }
 
-    public async Task<TimingsAndBatches> Insert<TNode, TRelationship>(CosmosReadOutput<TNode, TRelationship> cosmosData, int batchSize = 4000)
+    public async Task<TimingsAndBatches> Insert<TNode, TRelationship>(CosmosReadOutput<TNode, TRelationship> cosmosData, Mappings mappings, int batchSize = 4000)
         where TNode : CosmosNode
         where TRelationship : CosmosRelationship
     {
@@ -71,7 +71,7 @@ public class Neo4j
         output.Nodes = new TimingAndBatchCount { NumberOfBatches = nodeCypher.Count, TimeTaken = DateTime.Now - now };
 
         now = DateTime.Now;
-        var relationshipCypher = GenerateRelationshipQueries(cosmosData.Relationships, batchSize).ToList();
+        var relationshipCypher = GenerateRelationshipQueries(cosmosData.Relationships, batchSize, mappings).ToList();
         foreach (var cypher in relationshipCypher)
             await cypher.ExecuteWithoutResultsAsync();
         output.Relationships = new TimingAndBatchCount { NumberOfBatches = relationshipCypher.Count, TimeTaken = DateTime.Now - now };
@@ -79,7 +79,7 @@ public class Neo4j
         return output;
     }
 
-    private IEnumerable<ICypherFluentQuery> GenerateRelationshipQueries<TRelationship>(IDictionary<string, List<TRelationship>>? relationships, int batchSize)
+    private IEnumerable<ICypherFluentQuery> GenerateRelationshipQueries<TRelationship>(IDictionary<string, List<TRelationship>>? relationships, int batchSize, Mappings mappings)
         where TRelationship : CosmosRelationship
     {
         var output = new List<ICypherFluentQuery>();
@@ -101,8 +101,8 @@ public class Neo4j
 
                     var query = StartQuery.Write
                         .Unwind(toInsert, "rel")
-                        .Match($"(inN:{grp.Key.InVertexLabel} {{CosmosId: rel.inV}})")
-                        .Match($"(outN:{grp.Key.OutVertexLabel} {{CosmosId: rel.outV}})")
+                        .Match($"(inN:{grp.Key.InVertexLabel?.ToNeo4jMapping(mappings.Nodes)} {{CosmosId: rel.inV}})")
+                        .Match($"(outN:{grp.Key.OutVertexLabel?.ToNeo4jMapping(mappings.Nodes)} {{CosmosId: rel.outV}})")
                         .Merge($"(inN)-[r:`{typeAndRelationships.Key}` {{CosmosId:rel.id}}]->(outN)")
                         .Set("r += rel.properties");
 
