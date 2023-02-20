@@ -19,6 +19,10 @@
     "GenerateMappings": {
       "commandName": "Project",
       "commandLineArgs": "-gm GeneratedMappings.json"
+    },
+    "Use Generated": {
+      "commandName": "Project",
+      "commandLineArgs": "-mapping GeneratedMappings.json -batchsize 500"
     }
   }
 }

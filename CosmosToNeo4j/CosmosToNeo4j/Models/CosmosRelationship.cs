@@ -12,5 +12,5 @@ public class CosmosRelationship : CosmosEntity
 
     [JsonProperty("outV")] public string? OutVertexId { get; set; }
 
-    [JsonProperty("properties")] public IDictionary<string, object>? Properties { get; set; }
+    [JsonProperty("properties")] public IDictionary<string, object>? Properties { get; set; } = new Dictionary<string, object>();
 }
