@@ -1,4 +1,4 @@
-﻿namespace CosmosToNeo4j;
+﻿namespace CosmosToNeo4j.Models;
 
 public class Stats
 {

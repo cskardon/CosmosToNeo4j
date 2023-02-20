@@ -1,5 +1,6 @@
 namespace CosmosToNeo4j.Tests;
 
+using CosmosToNeo4j.Paginators;
 using FluentAssertions;
 
 public class GuidIdPaginatorTests

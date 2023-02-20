@@ -2,19 +2,19 @@
   "profiles": {
     "CosmosToNeo4j": {
       "commandName": "Project",
-      "commandLineArgs": "-mapping Mapping.json -batchsize 100"
+      "commandLineArgs": "-mapping ExampleMappings\\Mapping.json -batchsize 100"
     },
     "Missing Mapping": {
       "commandName": "Project",
-      "commandLineArgs": "-mapping Mapping.Missing.json"
+      "commandLineArgs": "-mapping ExampleMappings\\Mapping.Missing.json"
     },
     "Empty Mapping": {
       "commandName": "Project",
-      "commandLineArgs": "-mapping Mapping.Empty.json"
+      "commandLineArgs": "-mapping ExampleMappings\\Mapping.Empty.json"
     },
     "Invalid Mapping": {
       "commandName": "Project",
-      "commandLineArgs": "-mapping Mapping.LabelsNotThere.json -batchsize 100"
+      "commandLineArgs": "-mapping ExampleMappings\\Mapping.LabelsNotThere.json -batchsize 100"
     },
     "GenerateMappings": {
       "commandName": "Project",

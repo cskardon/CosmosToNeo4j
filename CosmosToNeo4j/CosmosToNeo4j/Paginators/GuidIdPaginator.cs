@@ -1,4 +1,6 @@
-﻿namespace CosmosToNeo4j;
+﻿using CosmosToNeo4j.Models;
+
+namespace CosmosToNeo4j.Paginators;
 
 public interface IPaginator
 {
@@ -23,8 +25,8 @@ public class GuidIdPaginator : IPaginator
 
     public IEnumerable<Pairing> GeneratePagingPairs(int numPages)
     {
-        if(numPages == 1)
-            return new []{new Pairing()};
+        if (numPages == 1)
+            return new[] { new Pairing() };
 
         if (NumberOfCharacters(numPages) == 1)
             return PairingsForSingleCharacters(numPages);
@@ -102,36 +104,38 @@ g.V(v1).out().has(‘id’, gte(‘C’)).has(‘id’, lte(‘D’)).out()
         var prevI = 0;
         var jumpTotal = 0.0;
         var pageCounter = 0;
-    
-        while(pageCounter < numPages - 1){
+
+        while (pageCounter < numPages - 1)
+        {
             jumpTotal += jumpsPerPage;
             var nextI = prevI + 1;
             if (jumpTotal % 1 == 0 && Math.Abs(jumpsPerPage - 1) > double.Epsilon)
             {
-                if(jumpsPerPage <= 2)
+                if (jumpsPerPage <= 2)
                     nextI++;
                 else
                     nextI += (int)jumpsPerPage - 1;
             }
 
-            if(nextI >= IdChars.Length){
+            if (nextI >= IdChars.Length)
+            {
                 nextI--;
-                if(nextI == prevI)
+                if (nextI == prevI)
                     break;
             }
-        
-            if(nextI >= IdChars.Length)
+
+            if (nextI >= IdChars.Length)
                 break;
 
-            pairings.Add(new Pairing{Start = IdChars[prevI].ToString(), End = IdChars[nextI].ToString() });
+            pairings.Add(new Pairing { Start = IdChars[prevI].ToString(), End = IdChars[nextI].ToString() });
             prevI = nextI;
             pageCounter++;
         }
 
         if (prevI < numPages - 1)
-            prevI++;    
+            prevI++;
 
-        pairings.Add(new Pairing { Start = IdChars[prevI].ToString()});
+        pairings.Add(new Pairing { Start = IdChars[prevI].ToString() });
         return pairings;
     }
 

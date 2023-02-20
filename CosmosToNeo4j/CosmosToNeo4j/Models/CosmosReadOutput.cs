@@ -1,6 +1,4 @@
-﻿using CosmosToNeo4j.Models;
-
-namespace CosmosToNeo4j;
+﻿namespace CosmosToNeo4j.Models;
 
 public class CosmosReadOutput<TNode, TRelationship>
     where TNode : CosmosNode

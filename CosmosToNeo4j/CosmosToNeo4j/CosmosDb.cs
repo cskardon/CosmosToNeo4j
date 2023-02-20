@@ -1,7 +1,8 @@
-﻿namespace CosmosToNeo4j;
+namespace CosmosToNeo4j;
 
 using System.IO.MemoryMappedFiles;
 using CosmosToNeo4j.Models;
+using CosmosToNeo4j.Paginators;
 using Gremlin.Net.Driver;
 using Gremlin.Net.Structure.IO.GraphSON;
 using JetBrains.Annotations;
@@ -115,9 +116,8 @@ public class CosmosDb
 
     private static int GetNumberOfPages(Stats stats, string label, int pageSize, bool isNode)
     {
-        if (!stats.NodeLabelCounts.ContainsKey(label) && !stats.RelationshipLabelCounts.ContainsKey(label))
-            return 0;
-        
+        if (!stats.NodeLabelCounts.ContainsKey(label) && !stats.RelationshipLabelCounts.ContainsKey(label)) return -1;
+
         var count = isNode ? stats.NodeLabelCounts[label] : stats.RelationshipLabelCounts[label];
         return (int)Math.Min(count / pageSize, 36);
     }
