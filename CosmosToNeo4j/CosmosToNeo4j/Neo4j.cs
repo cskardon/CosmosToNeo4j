@@ -103,7 +103,7 @@ public class Neo4j
                         .Unwind(toInsert, "rel")
                         .Match($"(inN:{grp.Key.InVertexLabel?.ToNeo4jMapping(mappings.Nodes)} {{CosmosId: rel.inV}})")
                         .Match($"(outN:{grp.Key.OutVertexLabel?.ToNeo4jMapping(mappings.Nodes)} {{CosmosId: rel.outV}})")
-                        .Merge($"(inN)-[r:`{typeAndRelationships.Key}` {{CosmosId:rel.id}}]->(outN)")
+                        .Merge($"(inN)<-[r:`{typeAndRelationships.Key}` {{CosmosId:rel.id}}]-(outN)")
                         .Set("r += rel.properties");
 
                     output.Add(query);
