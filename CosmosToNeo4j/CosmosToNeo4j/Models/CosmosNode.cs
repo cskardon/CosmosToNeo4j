@@ -36,9 +36,11 @@ public class CosmosNode : CosmosEntity
         var output = new Dictionary<string, object>();
         foreach (var element in Properties)
         {
-            var prop = (element.Value?.ToObject<List<CosmosProperty>>() ?? new List<CosmosProperty>()).FirstOrDefault();
-            if (prop != null && prop.Value != null)
-                output.Add(element.Key, prop.Value);
+            var props = (element.Value?.ToObject<List<CosmosProperty>>() ?? new List<CosmosProperty>())
+                .Select(p => p.Value)
+                .Where(v => v != null);
+            
+            output.Add(element.Key, props);
         }
 
         return output;
