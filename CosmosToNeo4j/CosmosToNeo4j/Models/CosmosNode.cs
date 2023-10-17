@@ -40,7 +40,9 @@ public class CosmosNode : CosmosEntity
                 .Select(p => p.Value)
                 .Where(v => v != null);
             
-            if (props.Any())
+            if (props.Count() == 1)
+                output.Add(element.Key, props.First());
+            else if (props.Count() > 1)
                 output.Add(element.Key, props);
         }
 
